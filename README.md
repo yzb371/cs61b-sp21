@@ -1,1 +1,1 @@
-# Berkeley-CS61B-Student-24sp-s371
+# CS61B-sp24
