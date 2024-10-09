@@ -94,6 +94,52 @@ public class Model extends Observable {
         setChanged();
     }
 
+
+    /**
+     * @param col
+     * @param row
+     * @return
+     */
+    public int getUpperEdge(int col, int row) {
+        while (row < board.size() - 1) {
+            if (tile(col, row + 1) != null) {
+                return  row + 1;
+            } else {
+                row++;
+            }
+        }
+        return board.size();
+    }
+
+    /** 处理单列的tilt
+     * @param col
+     */
+    public boolean handleACol(int col) {
+        boolean[] isMerged = new boolean[board.size()];
+        boolean changed = false;
+        for (int row = board.size() - 2; row >= 0; row--) {
+            Tile t = tile(col, row);
+            if (t == null)
+                continue;
+            int target = getUpperEdge(col, row);
+            if (target == board.size()) {
+                board.move(col, board.size() - 1, t);
+                changed = true;
+            } else {
+                if (t.value() == tile(col, target).value() && isMerged[target] == false) {
+                    board.move(col, target, t);
+                    score += t.value() * 2;
+                    isMerged[target] = true;
+                    changed = true;
+                } else if (tile(col, target - 1) == null) {
+                    board.move(col, target - 1, t);
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -113,6 +159,14 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+
+        board.setViewingPerspective(side);
+        for(int i = 0; i < board.size(); i++) {
+            if (handleACol(i)) {
+                changed = true;
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
 
         checkGameOver();
         if (changed) {
@@ -138,6 +192,13 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        int size =  b.size();
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (b.tile(i, j) == null)
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -148,6 +209,13 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        int size =  b.size();
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (b.tile(i, j) != null && b.tile(i, j).value() == Model.MAX_PIECE)
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -157,8 +225,35 @@ public class Model extends Observable {
      * 1. There is at least one empty space on the board.
      * 2. There are two adjacent tiles with the same value.
      */
+
+    public static boolean hasSameTile(Board b, int col, int row) {
+        int size = b.size();
+        if (col > 0 && col < size && b.tile(col, row).value() == b.tile(col - 1, row).value()) {
+            return true;
+        }
+        if (col < size - 1 && col >= 0 && b.tile(col, row).value() == b.tile(col + 1, row).value()) {
+            return true;
+        }
+        if (row > 0 && row < size && b.tile(col, row).value() == b.tile(col, row - 1).value()) {
+            return true;
+        }
+        if (row < size - 1 && row >= 0 && b.tile(col, row).value() == b.tile(col, row + 1).value()) {
+            return true;
+        }
+        return false;
+    }
+
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if (Model.emptySpaceExists(b))
+            return true;
+        int size =  b.size();
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (hasSameTile(b, i, j))
+                    return true;
+            }
+        }
         return false;
     }
 
